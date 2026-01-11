@@ -9,10 +9,10 @@ import scipy
 class UVVisProcessor:
     def __init__(self, min_wl, max_wl):
         """
-        :param self: UVVisProcessor instance
-        :param min_wl: int
+        self: UVVisProcessor instance
+        min_wl: int
                 Minimum wavelength range for analysis
-        :param max_wl: int
+        max_wl: int
                 Maximum wavelength range for analysis
         """
         self.min_wl = min_wl # Minimum wavelength range for analysis
@@ -21,7 +21,7 @@ class UVVisProcessor:
     def import_spectrum(self,filepath):
         """
         Import raw spectrum data from Shimadzu spectrometer and clean it.
-        :param filepath: str
+        filepath: str
             Path to raw spectrum file
         :return: Cleaned DataFrame with wavelength as index
         """
@@ -33,7 +33,7 @@ class UVVisProcessor:
         Clean and format raw spectrum data by handling empty values, setting wavelength
         index, and filtering to specified range.
         
-        :param df: DataFrame
+        df: DataFrame
             Raw spectrum from Shimadzu spectrometer with 'Wavelength nm.' and 'Abs.' columns
 
         :return: Cleaned DataFrame with wavelenght as index, filtered to min_wl and max_wl
@@ -41,6 +41,7 @@ class UVVisProcessor:
 
         df = df.copy() # Avoid modifying original DataFrame
         df = df.replace(' ',0) # Replace empty strings with 0
+        df.columns = ['Wavelength nm.','Abs.'] # Rename columns for consistency
         df = df.set_index('Wavelength nm.').astype(float) # Set wavelength as index and convert to float
         return df.loc[self.min_wl:self.max_wl].astype(float) # Filter to specified wavelength range
 
@@ -48,8 +49,8 @@ class UVVisProcessor:
         """
         Docstring for batch_import
         
-        :param self: UVVisProcessor instance
-        :param path: str
+        self: UVVisProcessor instance
+        path: str
                 Path to directory containing raw spectrum files
         """
         f = path + '/' # Ensure path ends with '/'
@@ -76,8 +77,8 @@ class UVVisProcessor:
         """
         Check if spectrum has excessive peak heights.
         
-        :param self: UVVisProcessor instance
-        :param spectrum: DataFrame
+        self: UVVisProcessor instance
+        spectrum: DataFrame
             Spectrum to check for excessive peak heights
         """
         if spectrum[spectrum > 0.1].iloc[:,0].mean() > 2.5: # Check if mean absorbance above 0.1 is greater than 2.5
@@ -90,7 +91,7 @@ class UVVisProcessor:
         """
         Extract file number from filename.
 
-        :param filename: str
+        filename: str
             Name of the file to extract the number from
         """
         return int(filename.split('.')[0].split('_')[1]) # Extract file number from filename
@@ -100,21 +101,21 @@ class UVVisAnalyser:
         """
         Docstring for __init__
         
-        :param self: UVVisAnalyser instance
-        :param height: float
+        self: UVVisAnalyser instance
+        height: float
                 Minimum height of peaks to detect
-        :param width: int
+        width: int
                 Minimum width of peaks to detect
         """
         self.height = height # Minimum height of peaks to detect
         self.width = width # Minimum width of peaks to detect
 
-    def fit_peaks(self, spectrum):
+    def fit_peaks(self, spectrum): 
         """
         Fit peaks to a given spectrum using scipy's find_peaks method.
 
-        :param self: UVVisAnalyser instance
-        :param spectrum: DataFrame
+        self: UVVisAnalyser instance
+        spectrum: DataFrame
             Spectrum to fit peaks to
         """
         peaks, _ = scipy.signal.find_peaks(spectrum.values,width=self.width,height=self.height) # Detect peaks in spectrum
@@ -122,17 +123,17 @@ class UVVisAnalyser:
         peak_abs = spectrum.iloc[peaks].values.astype(float).tolist() # Get absorbance values of detected peaks
         return peak_wl, peak_abs
 
-    def find_lambda_max(self, spectrum):
+    def find_lambda_max(self, spectrum): 
         """
         Find the wavelength of maximum absorbance in a spectrum.
 
-        :param self: UVVisAnalyser instance
-        :param spectrum: DataFrame
+        self: UVVisAnalyser instance
+        spectrum: DataFrame
             Spectrum to find lambda max for
         """
         return int(spectrum.astype(float).idxmax()) # Find wavelength of maximum absorbance
 
-    def get_absorbance(self, spectra, wavelength):
+    def get_absorbance(self, spectra, wavelength): 
         return spectra.loc[wavelength].tolist() # Get absorbance values at specified wavelength for all spectra
 
 class UVVisVisualiser:
@@ -140,14 +141,14 @@ class UVVisVisualiser:
     def plot_spectra(self, spectra, show_peaks=False ,peak_analyser=None, num_spectra = 3):
         """
         Plot UV-Vis spectra with optional peak annotation.
-        :param self: UVVisVisualiser instance
-        :param spectra: DataFrame
+        self: UVVisVisualiser instance
+        spectra: DataFrame
             DataFrame containing UV-Vis spectra to plot
-        :param show_peaks: bool
+        show_peaks: bool
             Whether to annotate detected peaks on the plot
-        :param peak_analyser: UVVisAnalyser
+        peak_analyser: UVVisAnalyser
             UVVisAnalyser instance for peak detection
-        :param num_spectra: int
+        num_spectra: int
             Number of spectra to annotate with peaks
         """
         fig, ax = plt.subplots(figsize=(10,6))
