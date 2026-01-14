@@ -40,9 +40,9 @@ class UVVisProcessor:
         """
 
         df = df.copy() # Avoid modifying original DataFrame
-        df = df.replace(' ',0) # Replace empty strings with 0
-        df.columns = ['Wavelength nm.','Abs.'] # Rename columns for consistency
-        df = df.set_index('Wavelength nm.').astype(float) # Set wavelength as index and convert to float
+        df = df.replace(' ',0)
+        df.columns = ['Wavelength nm.','Abs.'] # Rename columns to maintain consistency
+        df = df.set_index('Wavelength nm.').astype(float)
         return df.loc[self.min_wl:self.max_wl].astype(float) # Filter to specified wavelength range
 
     def batch_import(self,path):
@@ -53,8 +53,8 @@ class UVVisProcessor:
         path: str
                 Path to directory containing raw spectrum files
         """
-        f = path + '/' # Ensure path ends with '/'
-        files = [] # Initialize empty list to hold valid files
+        f = path + '/'
+        files = []
         try:
             files = [file for file in os.listdir(f) if file.split('.')[1]=='txt' and self.extract_file_number(file) < 10] # List all .txt files in directory with file number < 10
             files.sort(key=lambda x: self.extract_file_number(x)) # Sort files by extracted file number
@@ -64,14 +64,14 @@ class UVVisProcessor:
         
         spectra = pd.DataFrame(index=range(self.min_wl,self.max_wl)) # Initialize empty DataFrame with wavelength index
 
-        for file in files: # Loop through each file
-            spectrum = self.import_spectrum(f+file) # Import and clean spectrum
-            file_num = self.extract_file_number(file) # Extract file number for naming
+        for file in files:
+            spectrum = self.import_spectrum(f+file)
+            file_num = self.extract_file_number(file)
             if self.is_peaking(spectrum) == False: # Check if spectrum is valid (not peaking too high)
-                spectra[f'spectrum_{file_num}'] = spectrum.iloc[:,0] # Add spectrum to DataFrame
+                spectra[file] = spectrum.iloc[:,0] # Add spectrum to DataFrame
             else:
-                print(f'spectrum_{file_num} values are too high, omitting') # Omit spectrum if peaking too high
-        return spectra # Return compiled spectra DataFrame
+                print(f'{file} values are too high, omitting')
+        return spectra
 
     def is_peaking(self, spectrum):
         """
@@ -81,7 +81,7 @@ class UVVisProcessor:
         spectrum: DataFrame
             Spectrum to check for excessive peak heights
         """
-        if spectrum[spectrum > 0.1].iloc[:,0].mean() > 2.5: # Check if mean absorbance above 0.1 is greater than 2.5
+        if spectrum[spectrum > 0.1].iloc[:,0].mean() > 2.5: # Only check mean of values above 0.1 to avoid averaging the baseline
             return True
         else:
             return False
@@ -94,13 +94,11 @@ class UVVisProcessor:
         filename: str
             Name of the file to extract the number from
         """
-        return int(filename.split('.')[0].split('_')[1]) # Extract file number from filename
+        return int(filename.split('.')[0].split('_')[1])
 
 class UVVisAnalyser:
     def __init__(self, height=0.02, width=4):
         """
-        Docstring for __init__
-        
         self: UVVisAnalyser instance
         height: float
                 Minimum height of peaks to detect
@@ -119,8 +117,8 @@ class UVVisAnalyser:
             Spectrum to fit peaks to
         """
         peaks, _ = scipy.signal.find_peaks(spectrum.values,width=self.width,height=self.height) # Detect peaks in spectrum
-        peak_wl = spectrum.iloc[peaks].index.astype(int).tolist() # Get wavelengths of detected peaks
-        peak_abs = spectrum.iloc[peaks].values.astype(float).tolist() # Get absorbance values of detected peaks
+        peak_wl = spectrum.iloc[peaks].index.astype(int).tolist() # Get wavelengths of detected peaks as Python list
+        peak_abs = spectrum.iloc[peaks].values.astype(float).tolist() # Get absorbance values of detected peaks as Python list
         return peak_wl, peak_abs
 
     def find_lambda_max(self, spectrum): 
@@ -131,14 +129,14 @@ class UVVisAnalyser:
         spectrum: DataFrame
             Spectrum to find lambda max for
         """
-        return int(spectrum.astype(float).idxmax()) # Find wavelength of maximum absorbance
+        return int(spectrum.astype(float).idxmax()) # Find wavelength (index) of maximum absorbance
 
     def get_absorbance(self, spectra, wavelength): 
         return spectra.loc[wavelength].tolist() # Get absorbance values at specified wavelength for all spectra
 
 class UVVisVisualiser:
     """Visualise UV-Vis spectra"""
-    def plot_spectra(self, spectra, show_peaks=False ,peak_analyser=None, num_spectra = 3):
+    def plot_spectra(self, spectra, show_peaks=False ,peak_analyser=None, num_spectra = 3, plot_title=''):
         """
         Plot UV-Vis spectra with optional peak annotation.
         self: UVVisVisualiser instance
@@ -159,7 +157,11 @@ class UVVisVisualiser:
                 peaks, absorbances = peak_analyser.fit_peaks(spectra[spectrum])
                 ax.scatter(peaks, absorbances)
                 for peak, absorbance in zip(peaks, absorbances):
-                    plt.text(peak, absorbance, f'{peak:.0f}', ha='center',va='bottom')
+                    plt.text(peak, absorbance, f'{peak:.0f}', ha='center',va='bottom') # Label peak values
+        plt.xlabel('Wavelength / nm')
+        plt.ylabel('Absorbance')
+        if plot_title != '':
+            plt.title(plot_title)
         plt.show()
                 
             
