@@ -167,6 +167,9 @@ class StabilityExperiment:
         exp_table = self.get_fit_table(colour, time_range)
         plt.scatter(self.pl_time['elapsed time (h)'],self.pl_time[colour_col])
         plt.plot(exp_table['elapsed_time'],exp_table['function'])
+        plt.xlabel('Time / h')
+        plt.ylabel('Relative PL Change')
+        plt.title(f'Stretched Exponential Fit of {self.filename.split(".")[0]}')
         plt.show()
 
 
